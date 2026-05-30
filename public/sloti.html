@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sloti — Agenda Inteligente</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="assets/sloti-icon.png" type="image/png">
+
+<style>
+/* ═══════════════════════════════════════
+   WORKSPACE SCREEN — estilos adicionais
+═══════════════════════════════════════ */
+
+#workspace-screen {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #FAF8F6 0%, #F3EDE8 50%, #F5E8ED 100%);
+  padding: 24px;
+}
+
+.ws-card {
+  background: var(--card);
+  border-radius: 24px;
+  padding: 48px 44px;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  animation: fadeUp 0.4s ease;
+}
+
+.ws-logo {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.ws-logo .logo-mark {
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, var(--rose) 0%, var(--rose-dark) 100%);
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  box-shadow: 0 8px 24px rgba(217,165,179,0.35);
+}
+
+.ws-logo h2 {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.ws-logo p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.ws-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ws-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  width: 100%;
+  font-family: var(--font-body);
+}
+
+.ws-option-btn:hover {
+  border-color: var(--rose);
+  background: var(--rose-light);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.ws-option-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.ws-option-icon.create { background: var(--rose-light); }
+.ws-option-icon.join   { background: var(--beige-light); }
+
+.ws-option-text strong {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.ws-option-text span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.ws-panel { display: none; }
+
+.ws-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 24px;
+  transition: color 0.15s;
+}
+
+.ws-back:hover { color: var(--rose-dark); }
+
+.invite-code-box {
+  background: var(--beige-light);
+  border: 2px dashed var(--beige);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.invite-code-box .code-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+.invite-code-box .code-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--rose-dark);
+  letter-spacing: 0.18em;
+  font-family: var(--font-display);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.invite-code-box .code-value:hover { opacity: 0.7; }
+
+.invite-code-box .code-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.ws-success-icon {
+  font-size: 2.4rem;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+#ws-error {
+  background: #FFF0F3;
+  border: 1.5px solid #F5C6D0;
+  color: #C0394B;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  margin-bottom: 16px;
+  display: none;
+}
+#ws-error.show { display: block; }
+
+/* Badge workspace no header */
+.ws-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--beige-light);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  max-width: 160px;
+}
+
+.ws-badge span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Botão de convite no dropdown */
+#dd-invite { display: none; }
+
+@media (max-width: 640px) {
+  .ws-card { padding: 32px 20px; }
+  .ws-badge { display: none; }
+}
+</style>
+
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading">
+  <div class="loading-spinner"></div>
+  <p>Carregando Sloti…</p>
+</div>
+
+<!-- ══════════════════════════════════
+     TELA DE LOGIN / CADASTRO
+══════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-mark">
+        <img src="assets/sloti-icon.png" alt="Sloti" style="width:60px;height:60px">
+      </div>
+      <h1>sloti</h1>
+      <p>Agenda inteligente para salões</p>
+    </div>
+
+    <div id="error-msg" class="error-msg"></div>
+
+    <!-- FORM LOGIN -->
+    <div id="form-login">
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary" onclick="handleLogin()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+        Entrar
+      </button>
+      <div class="login-toggle">
+        Não tem conta? <a onclick="toggleForm('register')">Criar conta grátis</a>
+      </div>
+    </div>
+
+    <!-- FORM CADASTRO -->
+    <div id="form-register" style="display:none">
+      <div class="form-group">
+        <label>Seu nome</label>
+        <input type="text" id="reg-name" placeholder="Ex: Ana Silva">
+      </div>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="reg-email" placeholder="seu@email.com">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres">
+      </div>
+      <button class="btn btn-primary" onclick="handleRegister()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+        Criar conta
+      </button>
+      <div class="login-toggle">
+        Já tem conta? <a onclick="toggleForm('login')">Entrar</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TELA DE WORKSPACE (onboarding)
+══════════════════════════════════ -->
+<div id="workspace-screen">
+  <div class="ws-card">
+
+    <div class="ws-logo">
+      <div class="logo-mark">
+        <img src="assets/sloti-icon.png" alt="Sloti" style="width:60px;height:60px">
+      </div>
+      <h2>Quase lá!</h2>
+      <p>Configure seu espaço de trabalho para começar.</p>
+    </div>
+
+    <div id="ws-error"></div>
+
+    <!-- PAINEL 1: Escolha -->
+    <div id="ws-panel-choose">
+      <div class="ws-options">
+        <button class="ws-option-btn" onclick="showWorkspacePanel('create')">
+          <div class="ws-option-icon create">✨</div>
+          <div class="ws-option-text">
+            <strong>Criar novo salão</strong>
+            <span>Crie um workspace e convide sua equipe</span>
+          </div>
+        </button>
+        <button class="ws-option-btn" onclick="showWorkspacePanel('join')">
+          <div class="ws-option-icon join">🔑</div>
+          <div class="ws-option-text">
+            <strong>Entrar com código de convite</strong>
+            <span>Sua chefe já tem um workspace? Entre aqui</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- PAINEL 2: Criar workspace -->
+    <div id="ws-panel-create" class="ws-panel">
+      <button class="ws-back" onclick="showWorkspacePanel('choose')">← Voltar</button>
+      <div class="form-group">
+        <label>Nome do salão</label>
+        <input type="text" id="ws-name" placeholder="Ex: Studio da Ana, Salão Bella…" maxlength="40">
+      </div>
+      <button class="btn btn-primary" onclick="handleCreateWorkspace()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Criar workspace
+      </button>
+    </div>
+
+    <!-- PAINEL 3: Entrar com código -->
+    <div id="ws-panel-join" class="ws-panel">
+      <button class="ws-back" onclick="showWorkspacePanel('choose')">← Voltar</button>
+      <div class="form-group">
+        <label>Código de convite</label>
+        <input type="text" id="ws-invite-code" placeholder="Ex: A1B2C3"
+          maxlength="7" autocomplete="off"
+          style="text-transform:uppercase;letter-spacing:0.12em;font-size:1.1rem;text-align:center"
+          oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <button class="btn btn-primary" onclick="handleJoinWorkspace()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+        Entrar no salão
+      </button>
+    </div>
+
+    <!-- PAINEL 4: Código gerado (pós-criação) -->
+    <div id="ws-panel-code" class="ws-panel">
+      <div class="ws-success-icon">🎉</div>
+      <p style="text-align:center;font-size:0.9rem;color:var(--text-muted);margin-bottom:4px">
+        Workspace <strong id="ws-created-name" style="color:var(--text)"></strong> criado!
+      </p>
+      <p style="text-align:center;font-size:0.84rem;color:var(--text-muted);margin-bottom:4px">
+        Compartilhe este código com sua equipe:
+      </p>
+      <div class="invite-code-box">
+        <div class="code-label">Código de convite</div>
+        <div class="code-value" id="ws-code-display" onclick="copyInviteCode()" title="Clique para copiar">——</div>
+        <div class="code-hint">Clique no código para copiar</div>
+      </div>
+      <button class="btn btn-ghost" onclick="copyInviteCode()" style="width:100%;margin-bottom:10px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar código
+      </button>
+      <button class="btn btn-primary" onclick="finishOnboarding()">
+        Entrar na agenda →
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     APP PRINCIPAL
+══════════════════════════════════ -->
+<div id="app">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-mark-sm">
+        <img src="assets/sloti-icon.png" alt="Sloti" width="35" height="35">
+      </div>
+      <span>sloti</span>
+    </div>
+
+    <div class="realtime-indicator">
+      <div class="realtime-dot"></div>
+      Ao vivo
+    </div>
+
+    <div class="header-nav">
+
+      <!-- Badge com nome do workspace -->
+      <div class="ws-badge">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span id="workspace-name">—</span>
+      </div>
+
+      <button class="today-btn" onclick="goToToday()">Hoje</button>
+
+      <div class="date-navigator">
+        <button onclick="changeDay(-1)" title="Dia anterior">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="date-display" id="date-display" onclick="openDatePicker()"></div>
+        <button onclick="changeDay(1)" title="Próximo dia">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+
+      <button class="add-btn" onclick="openNewModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Agendar</span>
+      </button>
+
+      <div class="user-chip-wrapper">
+        <div class="user-chip" onclick="toggleUserMenu()" id="user-chip">
+          <div class="user-avatar" id="user-avatar-header"></div>
+          <span id="user-name-header">...</span>
+        </div>
+        <div class="dropdown" id="user-dropdown">
+          <div class="dropdown-user-info">
+            <strong id="dd-name">—</strong>
+            <small id="dd-email">—</small>
+          </div>
+
+          <!-- Botão de convite (visível só para owner) -->
+          <div class="dropdown-item" id="dd-invite" onclick="copyWorkspaceCode()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar código de convite
+          </div>
+          <div class="dropdown-divider"></div>
+
+          <div class="dropdown-item danger" onclick="handleLogout()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            Sair da conta
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CALENDÁRIO -->
+  <div class="calendar-container" id="calendar-container">
+    <div class="calendar-grid" id="calendar-grid">
+      <!-- gerado por JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODAL: NOVO AGENDAMENTO
+══════════════════════════════════ -->
+<div class="modal-overlay" id="modal-new">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Novo Agendamento</h2>
+      <button class="modal-close" onclick="closeModal('modal-new')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="modal-error" class="error-msg"></div>
+      <div class="form-group">
+        <label>Nome da cliente</label>
+        <input type="text" id="f-client" placeholder="Ex: Juliana Costa">
+      </div>
+      <div class="form-group">
+        <label>Procedimento</label>
+        <input type="text" id="f-procedure" placeholder="Ex: Escova, Manicure, Design de sobrancelha…">
+      </div>
+      <div class="form-group">
+        <label>Contato (WhatsApp)</label>
+        <input type="tel" id="f-contact" placeholder="(99) 99999-9999">
+      </div>
+      <div class="time-row">
+        <div class="form-group">
+          <label>Início</label>
+          <input type="time" id="f-start" min="08:00" max="18:00">
+        </div>
+        <div class="form-group">
+          <label>Término estimado</label>
+          <input type="time" id="f-end" min="08:00" max="18:00">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Profissional</label>
+        <select id="f-professional" disabled>
+          <option id="f-prof-option"></option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveAppointment()" style="width:auto;padding:12px 28px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Salvar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODAL: DETALHES DO AGENDAMENTO
+══════════════════════════════════ -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Agendamento</h2>
+      <button class="modal-close" onclick="closeModal('modal-detail')">×</button>
+    </div>
+    <div class="modal-body" id="detail-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="deleteAppointment()" style="color:#C0394B;border-color:#F5C6D0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Excluir
+      </button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-detail')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<script type="module" src="app.js"></script>
+
+</body>
+</html>
