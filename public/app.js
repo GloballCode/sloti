@@ -612,7 +612,6 @@ async function saveAppointment() {
 
   const dateStr  = formatDate(State.currentDate);
   const conflict = State.appointments.find(a =>
-    a.professionalUid === State.currentUser.uid &&
     a.id !== State.editingId &&
     a.date === dateStr &&
     toMinutes(a.startTime) < toMinutes(end) &&

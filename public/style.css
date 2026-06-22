@@ -914,3 +914,44 @@ body {
   
   .toast-container { left: 16px; right: 16px; bottom: 16px; }
 }
+
+/* Enhanced mobile calendar layout */
+@media (max-width: 640px) {
+  :root { --hour-height: 56px; --time-col: 48px; }
+
+  .calendar-grid { min-height: calc(var(--hour-height) * 10 + 40px); }
+
+  /* Allow horizontal scrolling for professional columns */
+  .professionals-area {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    gap: 8px;
+    padding-bottom: 12px;
+  }
+
+  /* Make each professional a fixed, scrollable card */
+  .professional-col {
+    flex: 0 0 260px;
+    min-width: 260px;
+    border-left: none;
+    margin-right: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--card);
+  }
+
+  /* Keep time column visible and compact */
+  .time-col {
+    width: var(--time-col);
+    flex: 0 0 var(--time-col);
+    padding-top: 40px;
+    background: transparent;
+  }
+
+  .hour-line { height: var(--hour-height); }
+
+  /* Reduce appointment padding on small screens */
+  .appointment-block { padding: 6px 8px; border-radius: 8px; }
+}
