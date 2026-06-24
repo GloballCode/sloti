@@ -190,6 +190,14 @@ const DataLayer = {
     return { id: ref.id, ...data };
   },
 
+  async updateAppointment(id, data) {
+    await setDoc(doc(db, 'appointments', id), {
+      ...data,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+    return { id, ...data };
+  },
+
   async deleteAppointment(id) {
     await deleteDoc(doc(db, 'appointments', id));
   },
@@ -534,17 +542,37 @@ function renderCalendar() {
       if (pct >= 0 && pct <= 100) html += `<div class="current-time-line" style="top:${pct}%"></div>`;
     }
 
-    myAppts.forEach(appt => {
-      const top    = timeToPercent(appt.startTime);
-      const height = Math.max(timeToPercent(appt.endTime) - top, 4);
-      if (top < 0 || top > 100) return;
+    const eventHeight = 34;
+    const eventBlocks = myAppts
+      .map(appt => ({ ...appt, top: timeToPercent(appt.startTime), height: eventHeight }))
+      .filter(appt => appt.top >= 0 && appt.top <= 100)
+      .sort((a,b) => a.top - b.top || a.startTime.localeCompare(b.startTime));
+
+    const lanes = [];
+    eventBlocks.forEach(appt => {
+      let lane = lanes.find(l => {
+        const last = l[l.length - 1];
+        return last.top + last.height <= appt.top;
+      });
+      if (!lane) {
+        lane = [];
+        lanes.push(lane);
+      }
+      lane.push(appt);
+      appt.lane = lanes.indexOf(lane);
+    });
+
+    const laneCount = Math.max(1, lanes.length);
+    eventBlocks.forEach(appt => {
+      const widthPct = 100 / laneCount;
+      const leftPct = appt.lane * widthPct;
       html += `<div class="appointment-block appt-color-${prof.colorIdx}"
-        style="top:${top}%;height:${height}%;min-height:48px;"
+        style="top:${appt.top}%;left:calc(${leftPct}% + 4px);width:calc(${widthPct}% - 8px);height:${appt.height}px;"
         onclick="event.stopPropagation();openDetail('${appt.id}')"
         title="${appt.clientName} — ${appt.procedure}">
         <div class="appt-name">${escHtml(appt.clientName)}</div>
         <div class="appt-proc">${escHtml(appt.procedure)}</div>
-        <div class="appt-time">${appt.startTime} – ${appt.endTime}</div>
+        <div class="appt-time">${appt.startTime}</div>
       </div>`;
     });
 
@@ -568,14 +596,13 @@ function renderCalendar() {
 // ──────────────────────────────────
 // AGENDAMENTOS
 // ──────────────────────────────────
-function openNewModal(startTime = '') {
-  State.editingId = null;
-  document.getElementById('modal-title').textContent = 'Novo Agendamento';
-  document.getElementById('f-client').value    = '';
-  document.getElementById('f-procedure').value = '';
-  document.getElementById('f-contact').value   = '';
-  document.getElementById('f-start').value     = startTime;
-  document.getElementById('f-end').value       = '';
+function openNewModal(startTime = '', appointment = null) {
+  State.editingId = appointment ? appointment.id : null;
+  document.getElementById('modal-title').textContent = appointment ? 'Editar Agendamento' : 'Novo Agendamento';
+  document.getElementById('f-client').value    = appointment ? appointment.clientName : '';
+  document.getElementById('f-procedure').value = appointment ? appointment.procedure : '';
+  document.getElementById('f-contact').value   = appointment ? appointment.contact : '';
+  document.getElementById('f-start').value     = appointment ? appointment.startTime : startTime;
   hideModalError();
   openModal('modal-new');
 }
@@ -588,10 +615,7 @@ function onColClick(event, profUid) {
   const minutes  = Math.round(pct * (END_HOUR - START_HOUR) * 60 / 30) * 30;
   const totalMin = START_HOUR * 60 + minutes;
   const timeStr  = `${String(Math.floor(totalMin/60)).padStart(2,'0')}:${String(totalMin%60).padStart(2,'0')}`;
-  const endMin   = Math.min(totalMin + 60, END_HOUR * 60);
-  const endStr   = `${String(Math.floor(endMin/60)).padStart(2,'0')}:${String(endMin%60).padStart(2,'0')}`;
   openNewModal(timeStr);
-  document.getElementById('f-end').value = endStr;
 }
 
 async function saveAppointment() {
@@ -600,43 +624,34 @@ async function saveAppointment() {
   const procedure = document.getElementById('f-procedure').value.trim();
   const contact   = document.getElementById('f-contact').value.trim();
   const start     = document.getElementById('f-start').value;
-  const end       = document.getElementById('f-end').value;
 
   if (!client)    return showModalError('Informe o nome da cliente.');
   if (!procedure) return showModalError('Informe o procedimento.');
   if (!start)     return showModalError('Informe o horário de início.');
-  if (!end)       return showModalError('Informe o horário de término.');
-  if (start >= end) return showModalError('O término deve ser depois do início.');
   if (toMinutes(start) < START_HOUR * 60) return showModalError('Horário mínimo: 08:00.');
-  if (toMinutes(end)   > END_HOUR   * 60) return showModalError('Horário máximo: 18:00.');
+  if (toMinutes(start) > END_HOUR * 60) return showModalError('Horário máximo: 18:00.');
 
-  const dateStr  = formatDate(State.currentDate);
-  const conflict = State.appointments.find(a =>
-    a.id !== State.editingId &&
-    a.date === dateStr &&
-    toMinutes(a.startTime) < toMinutes(end) &&
-    toMinutes(a.endTime)   > toMinutes(start)
-  );
-  if (conflict) return showModalError(
-    `⚠️ Conflito! Você já tem "${conflict.clientName}" das ${conflict.startTime} às ${conflict.endTime}.`
-  );
-
+  const dateStr = formatDate(State.currentDate);
   const data = {
     clientName:       client,
     procedure,
     contact,
     startTime:        start,
-    endTime:          end,
     date:             dateStr,
-    workspaceId:      State.currentUser.workspaceId,  // ← isolamento
+    workspaceId:      State.currentUser.workspaceId,
     professionalUid:  State.currentUser.uid,
     professionalName: State.currentUser.name,
   };
 
   try {
-    await DataLayer.addAppointment(data);
+    if (State.editingId) {
+      await DataLayer.updateAppointment(State.editingId, data);
+      showToast('Agendamento atualizado!', 'success');
+    } else {
+      await DataLayer.addAppointment(data);
+      showToast('Agendamento salvo!', 'success');
+    }
     closeModal('modal-new');
-    showToast('Agendamento salvo!', 'success');
   } catch(e) {
     showModalError('Erro ao salvar: ' + e.message);
   }
@@ -663,17 +678,40 @@ function openDetail(id) {
     </div>
     <div class="detail-row">
       <div class="detail-icon">🕐</div>
-      <div class="detail-content"><label>Horário</label><span>${appt.startTime} – ${appt.endTime}</span></div>
+      <div class="detail-content"><label>Horário</label><span>${appt.startTime}</span></div>
     </div>
     <div class="detail-row">
       <div class="detail-icon">💆</div>
       <div class="detail-content"><label>Profissional</label><span>${escHtml(appt.professionalName)}</span></div>
     </div>
-    ${!isOwner ? '<p style="font-size:.78rem;color:var(--text-muted);margin-top:12px;text-align:center">Apenas a profissional responsável pode excluir este agendamento.</p>' : ''}
+    ${!isOwner ? '<p style="font-size:.78rem;color:var(--text-muted);margin-top:12px;text-align:center">Apenas a profissional responsável pode editar ou excluir este agendamento.</p>' : ''}
   `;
-  const delBtn = document.querySelector('#modal-detail .modal-footer .btn-ghost:first-child');
+
+  const footer = document.querySelector('#modal-detail .modal-footer');
+  if (footer) {
+    let editBtn = footer.querySelector('.btn-primary.edit-btn');
+    if (!editBtn) {
+      editBtn = document.createElement('button');
+      editBtn.className = 'btn btn-primary edit-btn';
+      editBtn.style.marginRight = 'auto';
+      editBtn.textContent = 'Editar';
+      editBtn.type = 'button';
+      editBtn.onclick = () => openEditAppointment(id);
+      footer.insertBefore(editBtn, footer.firstChild);
+    }
+    editBtn.style.display = isOwner ? 'inline-flex' : 'none';
+  }
+
+  const delBtn = footer?.querySelector('.btn-ghost');
   if (delBtn) delBtn.style.display = isOwner ? 'inline-flex' : 'none';
   openModal('modal-detail');
+}
+
+function openEditAppointment(id) {
+  const appt = State.appointments.find(a => a.id === id);
+  if (!appt) return;
+  closeModal('modal-detail');
+  openNewModal(appt.startTime, appt);
 }
 
 async function deleteAppointment() {

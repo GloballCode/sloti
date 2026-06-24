@@ -1,0 +1,25 @@
+{
+  "name": "Sloti — Agenda Inteligente",
+  "short_name": "Sloti",
+  "description": "Agenda inteligente para salões, com acesso rápido e instalação no celular.",
+  "start_url": "./sloti.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF8F6",
+  "theme_color": "#D9A5B3",
+  "icons": [
+    {
+      "src": "assets/sloti-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/sloti-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "pt-BR"
+}
